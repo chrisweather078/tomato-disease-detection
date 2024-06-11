@@ -64,24 +64,28 @@ class _HomePageState extends State<HomePage> {
 
     await testYolov5(_imagePath);
 
-    double x, y, w, h;
+    double x, y, w, h; // initialize rendering coordinates
 
     if (_contWidth / _contHeight > _imageWidth / _imageHeight) {
-      // taller images
+      // check if image is taller than wider
       _destinationSize =
           Size(_imageWidth * _contWidth / _imageHeight, _contHeight);
     } else {
-      // for wider images
+      // check if image is wider than taller
       _destinationSize =
           Size(_contWidth, _imageHeight * _contWidth / _imageWidth);
     }
 
+    // loop through output detections
     for (var rec in finalRecognitions) {
-      x = rec[2] * _destinationSize.width;
+      x = rec[2] *
+          _destinationSize
+              .width; // format output detections to fit display image
       y = rec[3] * _destinationSize.height;
       w = rec[4] * _destinationSize.width;
       h = rec[5] * _destinationSize.height;
 
+      // render bounding boxes using a widget
       _boundingBoxesWidgets.add(Positioned(
         left: x - w / 2,
         top: y - h / 2,
@@ -105,7 +109,7 @@ class _HomePageState extends State<HomePage> {
         Flushbar(
           message: "🟡Healthy  🔴Early Blight  🔵Late Blight",
           messageSize: 14,
-          duration: const Duration(seconds: 10),
+          duration: const Duration(seconds: 20),
           flushbarPosition: FlushbarPosition.TOP,
           flushbarStyle: FlushbarStyle.FLOATING,
           margin: const EdgeInsets.all(10),

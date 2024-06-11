@@ -6,14 +6,15 @@ late Interpreter interpreter; // initializing interpreter for inference
 late List finalRecognitions;
 
 loadModel() async {
-  interpreter = await Interpreter.fromAsset('assets/model.lite'); // loading tflite model
+  interpreter = await Interpreter.fromAsset(
+      'assets/uno-int8.lite'); // loading tflite model
 }
 
 testYolov5(String imagePath) async {
   img.Image? image = await _loadImage(imagePath);
   final input = _preProcess(image!);
 
-  final output = List<num>.filled(1 * 6300 * 8, 0).reshape([1, 6300, 8]);
+  final output = List<num>.filled(1 * 6300 * 20, 0).reshape([1, 6300, 20]);
   int predictionTimeStart = DateTime.now().millisecondsSinceEpoch;
 
   interpreter.run([input], output); // running inference on pre-processed image
@@ -23,6 +24,7 @@ testYolov5(String imagePath) async {
   print('Prediction time: $predictionTime ms');
 
   finalRecognitions = formatRecognitions(output);
+  print(finalRecognitions);
 }
 
 // how to figure out the structure of the output after running inference
@@ -33,7 +35,8 @@ Future<img.Image?> _loadImage(String imagePath) async {
 }
 
 List<List<List<num>>> _preProcess(img.Image image) {
-  final imgResized = img.copyResize(image, width: 320, height: 320); // resizing of image
+  final imgResized =
+      img.copyResize(image, width: 320, height: 320); // resizing of image
 
   return convertImageToMatrix(imgResized);
 }
@@ -55,7 +58,7 @@ List<List<List<num>>> convertImageToMatrix(img.Image image) {
 List<List> formatRecognitions(List recognitions) {
   List<List> recognitionList = [];
   const double confThr = 0.50; // class confidence threshold
-  const int classNum = 3; // number of output classes
+  const int classNum = 20; // number of output classes
   const double classScr = 0.50; // class score threshold
 
   // Iterate through each detection
@@ -74,7 +77,7 @@ List<List> formatRecognitions(List recognitions) {
     }
 
     // add detects
-    int classIndex = recognition.sublist(5, 8).indexOf(maxClsConf) % classNum;
+    int classIndex = recognition.sublist(5, 20).indexOf(maxClsConf) % classNum;
 
     double confidence = maxClsConf;
     double x = recognition[0];
