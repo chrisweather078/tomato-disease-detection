@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:another_flushbar/flushbar.dart';
 import './yolo.dart';
@@ -21,6 +22,125 @@ class _HomePageState extends State<HomePage> {
     loadModel();
   }
 
+  @override
+  Widget build(BuildContext context) {
+    double screenHeight = MediaQuery.of(context).size.height;
+    double screenWidth = MediaQuery.of(context).size.width;
+    _contWidth = 0.95 * screenWidth;
+    _contHeight = 0.65 * screenHeight;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Tomato Clinic',
+          style: TextStyle(
+              color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900),
+        ),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF4D8C57),
+      ),
+      backgroundColor: Colors.green.shade50,
+      body: isLoading ? buildLoadingScreen() : buildHomepage(),
+      bottomNavigationBar: BottomAppBar(
+        color: const Color(0xFF4D8C57),
+        height: 0.12 * screenHeight,
+        shape: const CircularNotchedRectangle(),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.camera_alt_outlined),
+              color: Colors.white,
+              iconSize: 40,
+              tooltip: "Select image from camera",
+              onPressed: _getImageFromCamera,
+            ),
+            const SizedBox(width: 50),
+            IconButton(
+              icon: const Icon(Icons.photo_library_outlined),
+              color: Colors.white,
+              iconSize: 40,
+              tooltip: "Select image from gallery",
+              onPressed: _getImageFromGallery,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: GestureDetector(
+        onLongPress: _showFlushBar,
+        child: FloatingActionButton.large(
+            shape: const CircleBorder(),
+            backgroundColor: const Color.fromRGBO(255, 255, 255, 1),
+            onPressed: () => setState(() {
+                  if (_imageFile != null) {
+                    isLoading = true;
+                    _detectObjects();
+                  }
+                  _boundingBoxesWidgets = [];
+                }),
+            // tooltip: 'Perform detection',
+            child: const Icon(
+              Icons.search,
+              color: Color(0xFF4D8C57),
+              size: 40,
+            )),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget buildLoadingScreen() {
+    // return const Opacity(
+    //     opacity: 0.5,
+    //     child: ModalBarrier(dismissible: false, color: Colors.black));
+    return const Center(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CupertinoActivityIndicator(
+              radius: 50.0, color: CupertinoColors.activeGreen),
+          Padding(
+            padding: EdgeInsets.only(top: 20.0),
+            child: Text("Detecting, please wait..."),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildHomepage() {
+    return Center(
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 8.0),
+            height: _contHeight,
+            width: _contWidth,
+            alignment: Alignment.center,
+            child: _imageFile == null
+                ? ClipRRect(
+                    child: Image.asset(
+                      './assets/no_photo3.png',
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : loadingImage? const Text("Loading image, please wait...") : SizedBox(
+                    child: Stack(children: [
+                    ClipRRect(
+                        borderRadius: BorderRadius.circular(10.0),
+                        child: Image.file(
+                          _imageFile!,
+                          fit: BoxFit.cover,
+                        )),
+                    ..._boundingBoxesWidgets,
+                  ])),
+          ),
+        ],
+      ),
+    );
+  }
+
   File? _imageFile;
   late int _imageWidth;
   late int _imageHeight;
@@ -28,12 +148,13 @@ class _HomePageState extends State<HomePage> {
   late double _contWidth;
   late double _contHeight;
   bool isLoading = false;
+  bool loadingImage = false;
   bool sFlush = false;
   final List _classColor = [
     Colors.black,
     Colors.yellow,
     Colors.orange,
-    Colors.green,
+    Colors.white,
     Colors.red,
     Colors.purple,
     Colors.blue,
@@ -43,7 +164,7 @@ class _HomePageState extends State<HomePage> {
 
   List<Widget> _boundingBoxesWidgets = [];
 
-  Future<void> _detectObjects(BuildContext context) async {
+  Future<void> _detectObjects() async {
     setState(() {
       isLoading = true;
       sFlush = true;
@@ -98,6 +219,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _getImageFromCamera() async {
     setState(() {
       sFlush = false;
+      loadingImage = true;
     });
     final picker = ImagePicker();
     // ignore: deprecated_member_use
@@ -116,6 +238,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _imageWidth = frameInfo.image.width;
         _imageHeight = frameInfo.image.height;
+        loadingImage = false;
       });
     }
   }
@@ -123,6 +246,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _getImageFromGallery() async {
     setState(() {
       sFlush = false;
+      loadingImage = true;
     });
     final picker = ImagePicker();
     // ignore: deprecated_member_use
@@ -141,6 +265,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _imageWidth = frameInfo.image.width;
         _imageHeight = frameInfo.image.height;
+        loadingImage = false;
       });
     }
   }
@@ -150,7 +275,7 @@ class _HomePageState extends State<HomePage> {
       if (_boundingBoxesWidgets.isNotEmpty) {
         Flushbar(
           message:
-              "⚫Bacterial Spot\n🟡Early Blight\n🟠Fosarium\n🟢Healthy\n🔴Late Blight\n🟣Leaf Curl\n🔵Mosaic\n🟤Septoria",
+              "⚫Bacterial Spot\n🟡Early Blight\n🟠Fosarium\n⚪Healthy\n🔴Late Blight\n🟣Leaf Curl\n🔵Mosaic\n🟤Septoria",
           messageSize: 14,
           duration: const Duration(seconds: 5),
           flushbarPosition: FlushbarPosition.TOP,
@@ -203,121 +328,21 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-    double screenWidth = MediaQuery.of(context).size.width;
-    _contWidth = 0.95 * screenWidth;
-    _contHeight = 0.65 * screenHeight;
-
-    return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Stack(children: [
-          Scaffold(
-            appBar: AppBar(
-              title: const Text(
-                'Tomato Clinic',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 25,
-                    fontWeight: FontWeight.w900),
-              ),
-              centerTitle: true,
-              backgroundColor: const Color(0xFF4D8C57),
-            ),
-            backgroundColor: Colors.green.shade50,
-            body: Center(
-              child: Column(
-                children: [
-                  Container(
-                    margin: const EdgeInsets.only(top: 8.0),
-                    height: _contHeight,
-                    width: _contWidth,
-                    alignment: Alignment.center,
-                    child: _imageFile == null
-                        ? ClipRRect(
-                            child: Image.asset(
-                              './assets/no_photo3.png',
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        : SizedBox(
-                            child: Stack(children: [
-                            ClipRRect(
-                                borderRadius: BorderRadius.circular(10.0),
-                                child: Image.file(
-                                  _imageFile!,
-                                  fit: BoxFit.cover,
-                                )),
-                            ..._boundingBoxesWidgets,
-                          ])),
-                  ),
-                ],
-              ),
-            ),
-            bottomNavigationBar: BottomAppBar(
-              color: const Color(0xFF4D8C57),
-              height: 0.12 * screenHeight,
-              shape: const CircularNotchedRectangle(),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.camera_alt_outlined),
-                    color: Colors.white,
-                    iconSize: 40,
-                    tooltip: "Select image from camera",
-                    onPressed: _getImageFromCamera,
-                  ),
-                  const SizedBox(width: 50),
-                  IconButton(
-                    icon: const Icon(Icons.photo_library_outlined),
-                    color: Colors.white,
-                    iconSize: 40,
-                    tooltip: "Select image from gallery",
-                    onPressed: _getImageFromGallery,
-                  ),
-                ],
-              ),
-            ),
-            floatingActionButton: FloatingActionButton.large(
-                shape: const CircleBorder(),
-                backgroundColor: const Color.fromRGBO(255, 255, 255, 1),
-                onPressed: () => setState(() {
-                      if (_imageFile != null) {
-                        isLoading = true;
-                        _detectObjects(context);
-                      }
-                      _boundingBoxesWidgets = [];
-                    }),
-                tooltip: 'Perform detection',
-                child: GestureDetector(
-                    onLongPress: _showFlushBar,
-                    child: const Icon(
-                      Icons.search,
-                      color: Color(0xFF4D8C57),
-                      size: 40,
-                    ))),
-            floatingActionButtonLocation:
-                FloatingActionButtonLocation.centerDocked,
-          ),
-          if (isLoading)
-            const Opacity(
-              opacity: 0.5,
-              child: ModalBarrier(dismissible: false, color: Colors.black),
-            ),
-          if (isLoading) // detecting please wait
-            const Center(
-              child: Icon(
-                Icons.hourglass_bottom,
-                size: 100,
-                color: Colors.white,
-              ),
-            ),
-        ]));
-  }
 }
+
+// if (isLoading)
+//             const Opacity(
+//               opacity: 0.5,
+//               child: ModalBarrier(dismissible: false, color: Colors.black),
+//             ),
+//           if (isLoading) // detecting please wait
+//             const Center(
+//               child: Icon(
+//                 Icons.hourglass_bottom,
+//                 size: 100,
+//                 color: Colors.white,
+//               ),
+//             ),
 
 // detect button pressed but doesnt show detecting on second try
 // use int8 model for inferencing

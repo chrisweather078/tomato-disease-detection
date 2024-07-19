@@ -34,7 +34,7 @@ class IntroScreen extends StatelessWidget {
     PageViewModel(
         title: 'Step 2',
         body:
-            'Long press on the detect button to show color codes after detection\nThats it!\n Have fun, Lean, Enjoy! ',
+            'Long press on the detect button to show color codes after detection\nThats it!\n Have fun, Learn, Enjoy! ',
         image: Center(
           child: Image.asset('assets/color_code.png'),
         ),

@@ -3,14 +3,16 @@ import 'package:image/image.dart' as img;
 import 'dart:io';
 
 late Interpreter interpreter; // initializing interpreter for inference
-late List finalRecognitions;
+List finalRecognitions = [];
 
-loadModel() async {
-  interpreter =
-      await Interpreter.fromAsset('assets/model.lite'); // loading tflite model
+Future<void> loadModel() async {
+  int optimalThreadCount = (Platform.numberOfProcessors / 2).ceil();
+  interpreter = await Interpreter.fromAsset('assets/model.lite',
+      options: InterpreterOptions()
+        ..threads = optimalThreadCount); // loading tflite model
 }
 
-testYolov5(String imagePath) async {
+Future<void> testYolov5(String imagePath) async {
   img.Image? image = await _loadImage(imagePath);
   final input = _preProcess(image!);
 
@@ -18,13 +20,14 @@ testYolov5(String imagePath) async {
   int predictionTimeStart = DateTime.now().millisecondsSinceEpoch;
 
   interpreter.run([input], output); // running inference on pre-processed image
+  // interpreter.close();
 
   int predictionTime =
       DateTime.now().millisecondsSinceEpoch - predictionTimeStart;
   print('Prediction time: $predictionTime ms');
 
-  finalRecognitions = formatRecognitions(output);
-  // print(finalRecognitions);
+  formatRecognitions(output);
+  // print(output);
 }
 
 // how to figure out the structure of the output after running inference
@@ -55,11 +58,11 @@ List<List<List<num>>> convertImageToMatrix(img.Image image) {
   );
 }
 
-List<List> formatRecognitions(List recognitions) {
+Future<void> formatRecognitions(List recognitions) async {
   List<List> recognitionList = [];
   const double confThr = 0.80; // class confidence threshold
   const int classNum = 8; // number of output classes
-  const double classScr = 0.50; // class score threshold
+  const double classScr = 0.70; // class score threshold
 
   // Iterate through each detection
   for (var recognition in recognitions[0]) {
@@ -88,5 +91,5 @@ List<List> formatRecognitions(List recognitions) {
     recognitionList.add([classIndex, confidence, x, y, w, h]);
   }
 
-  return recognitionList;
+  finalRecognitions = recognitionList;
 }

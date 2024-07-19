@@ -20,8 +20,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: show ? IntroScreen() : const HomePage(), // uncomment this line
-      // home: IntroScreen(),
+      home: show ? IntroScreen() : const HomePage(), 
+      // home: IntroScreen(), // uncomment this line
     );
   }
 }
+// work on lag
+// work on multiple boxes
