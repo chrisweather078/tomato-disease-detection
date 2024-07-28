@@ -60,9 +60,9 @@ List<List<List<num>>> convertImageToMatrix(img.Image image) {
 
 Future<void> formatRecognitions(List recognitions) async {
   List<List> recognitionList = [];
-  const double confThr = 0.80; // class confidence threshold
+  const double confThr = 0.50; // class confidence threshold
   const int classNum = 8; // number of output classes
-  const double classScr = 0.70; // class score threshold
+  const double classScr = 0.50; // class score threshold
 
   // Iterate through each detection
   for (var recognition in recognitions[0]) {

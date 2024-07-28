@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import './home_page.dart';
 import './on_boarding.dart';
 
-bool show = true; // change to true
+bool show = true;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();

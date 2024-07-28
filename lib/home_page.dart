@@ -78,7 +78,6 @@ class _HomePageState extends State<HomePage> {
                   }
                   _boundingBoxesWidgets = [];
                 }),
-            // tooltip: 'Perform detection',
             child: const Icon(
               Icons.search,
               color: Color(0xFF4D8C57),
@@ -86,6 +85,24 @@ class _HomePageState extends State<HomePage> {
             )),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget buildLoadingImage() {
+    return const Center(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: Colors.greenAccent,
+          ),
+          Padding(
+            padding: EdgeInsets.only(top: 20.0),
+            child: Text("Loading image, please wait..."),
+          ),
+        ],
+      ),
     );
   }
 
@@ -125,16 +142,18 @@ class _HomePageState extends State<HomePage> {
                       fit: BoxFit.cover,
                     ),
                   )
-                : loadingImage? const Text("Loading image, please wait...") : SizedBox(
-                    child: Stack(children: [
-                    ClipRRect(
-                        borderRadius: BorderRadius.circular(10.0),
-                        child: Image.file(
-                          _imageFile!,
-                          fit: BoxFit.cover,
-                        )),
-                    ..._boundingBoxesWidgets,
-                  ])),
+                : loadingImage
+                    ? buildLoadingImage()
+                    : SizedBox(
+                        child: Stack(children: [
+                        ClipRRect(
+                            borderRadius: BorderRadius.circular(10.0),
+                            child: Image.file(
+                              _imageFile!,
+                              fit: BoxFit.cover,
+                            )),
+                        ..._boundingBoxesWidgets,
+                      ])),
           ),
         ],
       ),
