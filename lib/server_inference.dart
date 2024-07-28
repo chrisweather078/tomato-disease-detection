@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-Future<void> serverDetect(String imagePath) async {
+Future<dynamic> serverDetect(String imagePath) async {
   final url = Uri.parse('http://192.168.43.121:5000/detect');
   final request = http.MultipartRequest('POST', url);
 
@@ -11,17 +11,24 @@ Future<void> serverDetect(String imagePath) async {
     final response = await request.send();
     if (response.statusCode == 200) {
       final responseBody = await response.stream.bytesToString();
-      // var jsonResponse = json.decode(responseBody);
-      print('Inference result: $responseBody');
+      var jsonResponse = json.decode(responseBody);
+      // print('Inference result: $responseBody');
+      // print('Inference result: $jsonResponse');      
+      // print(convertResponse(jsonResponse));
+      return convertResponse(jsonResponse);
     } else {
       print('Failed to get inference. Status code: ${response.statusCode}');
+      // return [[]];
+      // return response.statusCode;
     }
   } catch (e) {
     print('Error sending request: $e');
+    // return [[]];
+    // return e;
   }
 }
 
-List<List<num>> convertResponse(List<List<String>> response) {
+convertResponse(var response) {
   return response.map((sublist) {
     return sublist.map((item) {
       if (item.contains('.')) {

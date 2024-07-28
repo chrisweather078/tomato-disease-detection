@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:another_flushbar/flushbar.dart';
-import './yolo.dart';
+// import './yolo.dart';
+import './server_inference.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +20,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    loadModel();
+    // loadModel();
   }
 
   @override
@@ -29,63 +30,70 @@ class _HomePageState extends State<HomePage> {
     _contWidth = 0.95 * screenWidth;
     _contHeight = 0.65 * screenHeight;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Tomato Clinic',
-          style: TextStyle(
-              color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900),
+    return Stack(children: [
+      Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Tomato Clinic',
+            style: TextStyle(
+                color: Colors.white, fontSize: 25, fontWeight: FontWeight.w900),
+          ),
+          centerTitle: true,
+          backgroundColor: const Color(0xFF4D8C57),
         ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF4D8C57),
-      ),
-      backgroundColor: Colors.green.shade50,
-      body: isLoading ? buildLoadingScreen() : buildHomepage(),
-      bottomNavigationBar: BottomAppBar(
-        color: const Color(0xFF4D8C57),
-        height: 0.12 * screenHeight,
-        shape: const CircularNotchedRectangle(),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.camera_alt_outlined),
-              color: Colors.white,
-              iconSize: 40,
-              tooltip: "Select image from camera",
-              onPressed: _getImageFromCamera,
-            ),
-            const SizedBox(width: 50),
-            IconButton(
-              icon: const Icon(Icons.photo_library_outlined),
-              color: Colors.white,
-              iconSize: 40,
-              tooltip: "Select image from gallery",
-              onPressed: _getImageFromGallery,
-            ),
-          ],
+        backgroundColor: Colors.green.shade50,
+        body: buildHomepage(),
+        bottomNavigationBar: BottomAppBar(
+          color: const Color(0xFF4D8C57),
+          height: 0.12 * screenHeight,
+          shape: const CircularNotchedRectangle(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.camera_alt_outlined),
+                color: Colors.white,
+                iconSize: 40,
+                tooltip: "Select image from camera",
+                onPressed: _getImageFromCamera,
+              ),
+              const SizedBox(width: 50),
+              IconButton(
+                icon: const Icon(Icons.photo_library_outlined),
+                color: Colors.white,
+                iconSize: 40,
+                tooltip: "Select image from gallery",
+                onPressed: _getImageFromGallery,
+              ),
+            ],
+          ),
         ),
+        floatingActionButton: GestureDetector(
+          onLongPress: _showFlushBar,
+          child: FloatingActionButton.large(
+              shape: const CircleBorder(),
+              backgroundColor: const Color.fromRGBO(255, 255, 255, 1),
+              onPressed: () => setState(() {
+                    if (_imageFile != null) {
+                      isLoading = true;
+                      _detectObjects();
+                    }
+                    _boundingBoxesWidgets = [];
+                  }),
+              child: const Icon(
+                Icons.search,
+                color: Color(0xFF4D8C57),
+                size: 40,
+              )),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
-      floatingActionButton: GestureDetector(
-        onLongPress: _showFlushBar,
-        child: FloatingActionButton.large(
-            shape: const CircleBorder(),
-            backgroundColor: const Color.fromRGBO(255, 255, 255, 1),
-            onPressed: () => setState(() {
-                  if (_imageFile != null) {
-                    isLoading = true;
-                    _detectObjects();
-                  }
-                  _boundingBoxesWidgets = [];
-                }),
-            child: const Icon(
-              Icons.search,
-              color: Color(0xFF4D8C57),
-              size: 40,
-            )),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-    );
+      if (isLoading)
+        const Opacity(
+            opacity: 0.5,
+            child: ModalBarrier(dismissible: false, color: Colors.black)),
+      if (isLoading) buildLoadingScreen()
+    ]);
   }
 
   Widget buildLoadingImage() {
@@ -95,7 +103,7 @@ class _HomePageState extends State<HomePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            color: Colors.greenAccent,
+            color: Colors.white,
           ),
           Padding(
             padding: EdgeInsets.only(top: 20.0),
@@ -116,11 +124,11 @@ class _HomePageState extends State<HomePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CupertinoActivityIndicator(
-              radius: 50.0, color: CupertinoColors.activeGreen),
-          Padding(
-            padding: EdgeInsets.only(top: 20.0),
-            child: Text("Detecting, please wait..."),
-          ),
+              radius: 70.0, color: CupertinoColors.white),
+          // Padding(
+          //   padding: EdgeInsets.only(top: 20.0),
+          //   child: Text("Detecting, please wait..."),
+          // ),
         ],
       ),
     );
@@ -189,7 +197,8 @@ class _HomePageState extends State<HomePage> {
       sFlush = true;
     });
 
-    await testYolov5(_imagePath);
+    // await testYolov5(_imagePath);
+    var finalRecognitions = await serverDetect(_imagePath);
 
     double x, y, w, h; // initialize rendering coordinates
 
@@ -205,12 +214,10 @@ class _HomePageState extends State<HomePage> {
 
     // loop through output detections
     for (var rec in finalRecognitions) {
-      x = rec[2] *
-          _destinationSize
-              .width; // format output detections to fit display image
-      y = rec[3] * _destinationSize.height;
-      w = rec[4] * _destinationSize.width;
-      h = rec[5] * _destinationSize.height;
+      x = rec[1] * _destinationSize.width; // format output detections
+      y = rec[2] * _destinationSize.height;
+      w = rec[3] * _destinationSize.width;
+      h = rec[4] * _destinationSize.height;
 
       // render bounding boxes using a widget
       _boundingBoxesWidgets.add(Positioned(
@@ -366,6 +373,6 @@ class _HomePageState extends State<HomePage> {
 // detect button pressed but doesnt show detecting on second try
 // use int8 model for inferencing
 // format results to have only 1 bounding box per image location
-// add windows ios 
+// add windows ios
 // add history
 // add dark mode
